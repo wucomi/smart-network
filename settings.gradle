@@ -30,5 +30,12 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "SmartNetwork"
-include ':app'
+
+// 读取环境变量
+def includeApp = System.getenv('INCLUDE_APP') ?: 'true'
+println "INCLUDE_APP: ${includeApp}"
+// 根据环境变量决定是否包含 app 模块, jitpack构建时不包含app模块
+if (includeApp.toBoolean()) {
+    include ':app'
+}
 include ':smart-network'
