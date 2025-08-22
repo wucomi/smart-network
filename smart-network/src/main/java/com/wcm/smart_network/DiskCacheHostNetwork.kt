@@ -1,10 +1,15 @@
 package com.wcm.smart_network
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 
-class DiskCacheHostNetwork(context: Context) : IDiskCacheHostNetwork {
-    private val sharedPreferences = context.getSharedPreferences("HostNetwork", Context.MODE_PRIVATE)
+object DiskCacheHostNetwork : IDiskCacheHostNetwork {
+    private lateinit var sharedPreferences: SharedPreferences
+
+    fun init(context: Context) {
+        sharedPreferences = context.getSharedPreferences("HostNetwork", Context.MODE_PRIVATE)
+    }
 
     override fun getAddressNetwork(address: String): Long {
         return sharedPreferences.getLong(address, 0)

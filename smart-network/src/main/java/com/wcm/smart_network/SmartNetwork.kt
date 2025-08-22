@@ -1,5 +1,6 @@
 package com.wcm.smart_network
 
+import android.util.Log
 import okhttp3.OkHttpClient
 import javax.net.SocketFactory
 
@@ -45,7 +46,7 @@ class SmartNetworkBuilder(
     fun build(): OkHttpClient {
         val client = clientBuilder.build()
         if (client.socketFactory != SocketFactory.getDefault()) {
-            throw IllegalStateException("SmartNetwork can only be used when the Okhttp SocketFactory is not set")
+            Log.e(TAG, "SmartNetwork can only be used when the Okhttp SocketFactory is not set")
         }
         return client.newBuilder().apply {
             val urlHolder = HttpUrlHolder()
@@ -60,6 +61,10 @@ class SmartNetworkBuilder(
             addNetworkInterceptor(ResponseInterceptor(finder))
             socketFactory(SmartNetworkSocketFactory(urlHolder, finder))
         }.build()
+    }
+
+    companion object {
+        const val TAG = "SmartNetwork"
     }
 }
 

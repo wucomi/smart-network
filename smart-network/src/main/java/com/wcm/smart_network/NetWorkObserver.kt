@@ -8,7 +8,7 @@ import android.net.NetworkRequest
 import android.util.Log
 
 object NetWorkObserver : INetWorkObserver {
-    private const val TAG = "NetWorkObserver"
+    private const val TAG = "SmartNetwork"
     private var connectivityManager: ConnectivityManager? = null
     private val networkObservers = arrayListOf<INetworkChangedObserver>()
     private val networkInfos = arrayListOf<NetworkInfo>()

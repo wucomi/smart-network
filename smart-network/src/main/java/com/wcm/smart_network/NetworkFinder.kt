@@ -152,6 +152,6 @@ class NetworkFinder(
     }
 
     companion object {
-        private const val TAG = "NetworkFinder"
+        private const val TAG = "SmartNetwork"
     }
 }
