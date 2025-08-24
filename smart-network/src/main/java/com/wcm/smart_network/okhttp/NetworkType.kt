@@ -1,4 +1,4 @@
-package com.wcm.smart_network
+package com.wcm.smart_network.okhttp
 
 enum class NetworkType {
     Cellular,

@@ -1,4 +1,4 @@
-package com.wcm.smart_network
+package com.wcm.smart_network.system.cache
 
 interface IDiskCacheHostNetwork {
     fun getAddressNetwork(address: String): Long

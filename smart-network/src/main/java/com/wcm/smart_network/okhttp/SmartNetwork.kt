@@ -1,4 +1,4 @@
-package com.wcm.smart_network
+package com.wcm.smart_network.okhttp
 
 import android.util.Log
 import okhttp3.OkHttpClient
