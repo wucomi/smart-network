@@ -1,10 +1,10 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.system.network
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-object DiskCacheHostNetwork : IDiskCacheHostNetwork {
+class DiskCacheHostNetwork : IDiskCacheHostNetwork {
     private lateinit var sharedPreferences: SharedPreferences
 
     fun init(context: Context) {

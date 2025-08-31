@@ -1,15 +1,14 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id 'maven-publish'
 }
 
 android {
-    namespace 'com.wcm.smart_network'
+    namespace 'com.hik.network.proxy'
     compileSdk 34
 
     defaultConfig {
-        minSdk 23
+        minSdk 24
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -38,34 +37,4 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
-    implementation libs.okhttp
-}
-
-//maven-publish配置
-group = LIB_GROUP
-version = LIB_VERSION
-description = '智能选网库'
-tasks.register('sourcesJar', Jar) {
-    from android.sourceSets.main.java.srcDirs
-    archiveClassifier.set('sources')
-}
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                artifactId 'smart-network'
-                from components.release
-                artifact sourcesJar
-            }
-        }
-        repositories {
-            maven {
-                url 'https://jitpack.io'
-                credentials {
-                    username project.findProperty("jitpack.username")
-                    password project.findProperty("jitpack.password")
-                }
-            }
-        }
-    }
 }

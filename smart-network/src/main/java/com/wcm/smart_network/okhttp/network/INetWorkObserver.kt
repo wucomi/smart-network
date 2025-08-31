@@ -1,4 +1,4 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.okhttp.network
 
 import android.net.Network
 
@@ -10,4 +10,5 @@ interface INetWorkObserver {
 interface INetworkChangedObserver {
     fun onNetConnected(networkInfo: NetworkInfo, networkInfos: List<NetworkInfo>)
     fun onNetDisconnected(network: Network, networkInfos: List<NetworkInfo>)
+    fun onCapabilitiesChanged(network: Network, networkInfos: List<NetworkInfo>)
 }

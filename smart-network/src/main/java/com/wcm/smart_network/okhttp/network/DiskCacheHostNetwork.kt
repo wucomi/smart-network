@@ -1,14 +1,14 @@
-package com.wcm.smart_network.system.cache
+package com.wcm.smart_network.okhttp.network
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-class DiskCacheHostNetwork : IDiskCacheHostNetwork {
+internal object DiskCacheHostNetwork : IDiskCacheHostNetwork {
     private lateinit var sharedPreferences: SharedPreferences
 
     fun init(context: Context) {
-        sharedPreferences = context.getSharedPreferences("HostNetwork", Context.MODE_PRIVATE)
+        sharedPreferences = context.getSharedPreferences("DiskCacheHostNetwork", Context.MODE_PRIVATE)
     }
 
     override fun getAddressNetwork(address: String): Long {

@@ -1,6 +1,6 @@
 package com.wcm.smart_network.system.proxy
 
-import com.wcm.smart_network.system.utils.Logger
+import com.wcm.smart_network.okhttp.utils.Logger
 
 class GlobalProxy {
     fun startGlobalProxy(port: String) {

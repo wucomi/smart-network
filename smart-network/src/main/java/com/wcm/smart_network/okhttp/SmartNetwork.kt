@@ -1,25 +1,37 @@
 package com.wcm.smart_network.okhttp
 
+import android.app.Application
+import android.content.Context
 import android.util.Log
+import com.wcm.smart_network.okhttp.network.DiskCacheHostNetwork
+import com.wcm.smart_network.okhttp.network.IDiskCacheHostNetwork
+import com.wcm.smart_network.okhttp.network.NetWorkObserver
+import com.wcm.smart_network.okhttp.network.NetworkFinder
+import com.wcm.smart_network.okhttp.network.NetworkType
+import com.wcm.smart_network.okhttp.network.ResponseInterceptor
+import com.wcm.smart_network.okhttp.socket.HttpUrlHolder
+import com.wcm.smart_network.okhttp.socket.HttpUrlInterceptor
+import com.wcm.smart_network.okhttp.socket.SmartNetworkSocketFactory
 import okhttp3.OkHttpClient
 import javax.net.SocketFactory
+import kotlin.concurrent.Volatile
+
+object SmartNetwork {
+    @Volatile
+    @JvmStatic
+    lateinit var appCtx: Application
+
+    fun init(context: Context) {
+        appCtx = context.applicationContext as Application
+    }
+}
 
 class SmartNetworkBuilder(
     private val clientBuilder: OkHttpClient.Builder,
-    private val networkObserver: INetWorkObserver
 ) {
-    private var diskCacheHostNetwork: IDiskCacheHostNetwork? = null
     private var strategy: List<NetworkType>? = null
     private var hostStrategy: Map<String, List<NetworkType>>? = null
-
-    /**
-     * 设置 diskCacheHostNetwork 参数
-     * @param cache 缓存策略
-     * @return SmartNetworkBuilder
-     */
-    fun setDiskCacheHostNetwork(cache: IDiskCacheHostNetwork) = apply {
-        this.diskCacheHostNetwork = cache
-    }
+    private var diskCacheHostNetwork: IDiskCacheHostNetwork? = null
 
     /**
      * 设置 strategy 参数
@@ -40,6 +52,15 @@ class SmartNetworkBuilder(
     }
 
     /**
+     * 设置 diskCacheHostNetwork 参数
+     * @param cache 缓存策略
+     * @return SmartNetworkBuilder
+     */
+    fun setDiskCacheHostNetwork(cache: IDiskCacheHostNetwork) = apply {
+        this.diskCacheHostNetwork = cache
+    }
+
+    /**
      * 应用配置并返回 OkHttpClient.Builder
      * @return OkHttpClient.Builder
      */
@@ -51,10 +72,12 @@ class SmartNetworkBuilder(
         return client.newBuilder().apply {
             val urlHolder = HttpUrlHolder()
             addInterceptor(HttpUrlInterceptor(urlHolder))
+            val hostNetworkCache = diskCacheHostNetwork ?: DiskCacheHostNetwork.apply {
+                init(SmartNetwork.appCtx)
+            }
             val finder = NetworkFinder(
-                networkObserver,
-                client.dispatcher,
-                diskCacheHostNetwork,
+                NetWorkObserver.apply { init(SmartNetwork.appCtx) },
+                hostNetworkCache,
                 strategy,
                 hostStrategy
             )
@@ -70,11 +93,8 @@ class SmartNetworkBuilder(
 
 /**
  * 开启 SmartNetwork 配置
- * @param networkObserver 网络状态观察者
  * @return SmartNetworkBuilder
  */
-fun OkHttpClient.Builder.smartNetwork(
-    networkObserver: INetWorkObserver
-): SmartNetworkBuilder {
-    return SmartNetworkBuilder(this, networkObserver)
+fun OkHttpClient.Builder.smartNetwork(): SmartNetworkBuilder {
+    return SmartNetworkBuilder(this)
 }

@@ -4,7 +4,7 @@ import android.os.Looper
 import com.wcm.smart_network.system.Route
 import com.wcm.smart_network.system.network.INetworkFinder
 import com.wcm.smart_network.system.network.NetworkInfo
-import com.wcm.smart_network.system.utils.Logger
+import com.wcm.smart_network.okhttp.utils.Logger
 import okhttp3.internal.closeQuietly
 import java.io.IOException
 import java.net.InetSocketAddress

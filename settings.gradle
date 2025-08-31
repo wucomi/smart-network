@@ -39,3 +39,4 @@ if (includeApp.toBoolean()) {
     include ':app'
 }
 include ':smart-network'
+include ':proxy'

@@ -2,16 +2,14 @@ package com.wcm.smart_network.system.proxy
 
 import com.wcm.smart_network.system.Route
 import com.wcm.smart_network.system.connection.IConnectionPool
-import com.wcm.smart_network.system.utils.Logger
+import com.wcm.smart_network.okhttp.utils.Logger
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.Socket
 import java.net.URL
-import kotlin.concurrent.thread
 
 /**
  * 协议处理器类，负责处理客户端的不同类型网络请求，支持HTTP、HTTPS和普通Socket协议。
@@ -201,32 +199,17 @@ class ProtocolHandler(
             }
         } catch (e: Exception) {
             Logger.error("处理客户端异常: ${e.message}", e)
-        } finally {
-            clientSocket.closeQuietly()
-            targetSocket?.closeQuietly()
         }
     }
 
     // 双向转发数据
     private fun forwardData(clientSocket: Socket, targetSocket: Socket) {
         // 客户端 -> 目标服务器
-        thread {
-            try {
-                clientSocket.inputStream.copyTo(targetSocket.outputStream, 8192)
-            } catch (e: Exception) {
-                // 正常关闭会抛出异常，忽略
-            }
+        try {
+            clientSocket.inputStream.copyTo(targetSocket.outputStream, 8192)
+        } catch (e: Exception) {
+            // 正常关闭会抛出异常，忽略
         }
-
-        // 目标服务器 -> 客户端
-        thread {
-            try {
-                targetSocket.inputStream.copyTo(clientSocket.outputStream, 8192)
-                println("1111=================1212111111")
-            } catch (e: Exception) {
-                // 正常关闭会抛出异常，忽略
-            }
-        }.join() // 等待转发完成
     }
 
     // 转发HTTP头
@@ -324,15 +307,6 @@ class ProtocolHandler(
             socket.outputStream.write(response.toByteArray())
             socket.outputStream.flush()
         } catch (e: Exception) { /* 忽略错误 */
-        }
-    }
-
-    // 安全关闭Socket
-    private fun Socket.closeQuietly() {
-        try {
-            close()
-        } catch (e: IOException) {
-            // 忽略关闭异常
         }
     }
 

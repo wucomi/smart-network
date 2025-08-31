@@ -1,4 +1,4 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.okhttp.socket
 
 import okhttp3.HttpUrl
 

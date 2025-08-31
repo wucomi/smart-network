@@ -1,8 +1,8 @@
 package com.wcm.smart_network.system
 
 import android.app.Application
-import com.wcm.smart_network.system.cache.DiskCacheHostNetwork
-import com.wcm.smart_network.system.cache.IDiskCacheHostNetwork
+import com.wcm.smart_network.system.network.DiskCacheHostNetwork
+import com.wcm.smart_network.system.network.IDiskCacheHostNetwork
 import com.wcm.smart_network.system.connection.ConnectionPoolConfig
 import com.wcm.smart_network.system.connection.DefaultTimeoutConfig
 import com.wcm.smart_network.system.connection.IConnectionPool

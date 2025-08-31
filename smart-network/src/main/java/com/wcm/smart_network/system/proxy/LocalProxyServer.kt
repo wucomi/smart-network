@@ -1,6 +1,6 @@
 package com.wcm.smart_network.system.proxy
 
-import com.wcm.smart_network.system.utils.Logger
+import com.wcm.smart_network.okhttp.utils.Logger
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.util.concurrent.Executors

@@ -1,12 +1,8 @@
 package com.wcm.smart_network.system.network
 
 import android.net.Network
-import com.wcm.smart_network.system.cache.IDiskCacheHostNetwork
-import com.wcm.smart_network.system.utils.Logger
-import okhttp3.internal.closeQuietly
-import java.net.Socket
+import com.wcm.smart_network.okhttp.utils.Logger
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 
 class NetworkFinder(
     networkObserver: INetWorkObserver,

@@ -1,32 +1,46 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.okhttp.network
 
 import android.net.Network
 import android.os.Looper
 import android.util.Log
-import okhttp3.Dispatcher
 import okhttp3.internal.closeQuietly
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 
-class NetworkFinder(
+internal class NetworkFinder(
     networkObserver: INetWorkObserver,
-    private val dispatcher: Dispatcher,
     private val diskCacheHostNetwork: IDiskCacheHostNetwork? = null,
     private val strategy: List<NetworkType>?,
     private val hostStrategy: Map<String, List<NetworkType>>? = null,
 ) {
     private val addressNetworkInfos = ConcurrentHashMap<String, NetworkInfo>()
     private var networkInfos: List<NetworkInfo> = arrayListOf()
+    private val dispatcher = Executors.newCachedThreadPool()
 
     init {
         networkObserver.registerNetworkObserver(object : INetworkChangedObserver {
             override fun onNetConnected(networkInfo: NetworkInfo, networkInfos: List<NetworkInfo>) {
                 this@NetworkFinder.networkInfos = networkInfos
+                if (networkInfo.isVpn) {
+                    val removeKeys = addressNetworkInfos.filter {
+                        it.value.network == networkInfo.network
+                    }.keys
+                    removeKeys.forEach { removeNetwork(it) }
+                }
             }
 
             override fun onNetDisconnected(network: Network, networkInfos: List<NetworkInfo>) {
+                this@NetworkFinder.networkInfos = networkInfos
+                val removeKeys = addressNetworkInfos.filter {
+                    it.value.network == network
+                }.keys
+                removeKeys.forEach { removeNetwork(it) }
+            }
+
+            override fun onCapabilitiesChanged(network: Network, networkInfos: List<NetworkInfo>) {
                 this@NetworkFinder.networkInfos = networkInfos
                 val removeKeys = addressNetworkInfos.filter {
                     it.value.network == network
@@ -71,9 +85,9 @@ class NetworkFinder(
         // 快速匹配
         var networkInfo: NetworkInfo? = null
         val countDownLatch = CountDownLatch(2)
-        val connections = sortNetworkInfos.map { SNConnection(it, Socket()) }
+        val connections = sortNetworkInfos.map { NConnection(it, Socket()) }
             .onEach { connection ->
-                dispatcher.executorService.execute {
+                dispatcher.execute {
                     if (isReachable(connection, host, port)) {
                         networkInfo = connection.networkInfo
                         (0 until countDownLatch.count).forEach { _ ->
@@ -96,7 +110,7 @@ class NetworkFinder(
         }
     }
 
-    private fun isReachable(connection: SNConnection, host: String?, port: Int) = runCatching {
+    private fun isReachable(connection: NConnection, host: String?, port: Int) = runCatching {
         val socket = connection.socket
         val networkInfo = connection.networkInfo
         networkInfo.network.bindSocket(socket)

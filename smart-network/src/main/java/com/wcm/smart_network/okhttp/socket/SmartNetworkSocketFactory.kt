@@ -1,10 +1,12 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.okhttp.socket
 
+import com.wcm.smart_network.okhttp.network.NetworkFinder
+import com.wcm.smart_network.okhttp.network.NetworkInfo
 import java.net.InetAddress
 import java.net.Socket
 import javax.net.SocketFactory
 
-class SmartNetworkSocketFactory(
+internal class SmartNetworkSocketFactory(
     private val urlHolder: HttpUrlHolder,
     private val finder: NetworkFinder,
 ) : SocketFactory() {

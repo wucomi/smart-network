@@ -1,4 +1,4 @@
-package com.wcm.smart_network.okhttp
+package com.wcm.smart_network.okhttp.network
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -6,8 +6,9 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import com.wcm.smart_network.okhttp.utils.removeIfa
 
-object NetWorkObserver : INetWorkObserver {
+internal object NetWorkObserver : INetWorkObserver {
     private const val TAG = "SmartNetwork"
     private var connectivityManager: ConnectivityManager? = null
     private val networkObservers = arrayListOf<INetworkChangedObserver>()
@@ -52,7 +53,9 @@ object NetWorkObserver : INetWorkObserver {
                                 NetworkType.ExtranetWifi
                             } else {
                                 NetworkType.IntranetWifi
-                            }
+                            },
+                            isVpn(network),
+                            connectivityManager?.getNetworkCapabilities(network)
                         )
                         networkInfos.add(networkInfo)
                         for (observer in networkObservers) {
@@ -63,9 +66,32 @@ object NetWorkObserver : INetWorkObserver {
                     override fun onLost(network: Network) {
                         super.onLost(network)
                         Log.d(TAG, "onWifiLost: network=$network")
-                        networkInfos.removeIf { it.network == network }
+                        networkInfos.removeIfa { it.network == network }
                         for (observer in networkObservers) {
                             observer.onNetDisconnected(network, networkInfos)
+                        }
+                    }
+
+                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                        super.onCapabilitiesChanged(network, networkCapabilities)
+                        Log.d(TAG, "onWifiCapabilitiesChanged: network=$network, networkCapabilities=$networkCapabilities")
+                        val index = networkInfos.indexOfFirst {
+                            it.network.networkHandle == network.networkHandle
+                        }
+                        if (index != -1) {
+                            networkInfos[index] = NetworkInfo(
+                                network,
+                                if (isExtranetWifi(network)) {
+                                    NetworkType.ExtranetWifi
+                                } else {
+                                    NetworkType.IntranetWifi
+                                },
+                                isVpn(network),
+                                networkCapabilities
+                            )
+                            for (observer in networkObservers) {
+                                observer.onCapabilitiesChanged(network, networkInfos)
+                            }
                         }
                     }
                 })
@@ -89,7 +115,11 @@ object NetWorkObserver : INetWorkObserver {
                     override fun onAvailable(network: Network) {
                         super.onAvailable(network)
                         Log.d(TAG, "onCellularAvailable: network=$network")
-                        val networkInfo = NetworkInfo(network, NetworkType.Cellular)
+                        val networkInfo = NetworkInfo(
+                            network, NetworkType.Cellular,
+                            isVpn(network),
+                            connectivityManager?.getNetworkCapabilities(network)
+                        )
                         networkInfos.add(networkInfo)
                         for (observer in networkObservers) {
                             observer.onNetConnected(networkInfo, networkInfos)
@@ -99,7 +129,7 @@ object NetWorkObserver : INetWorkObserver {
                     override fun onLost(network: Network) {
                         super.onLost(network)
                         Log.d(TAG, "onCellularLost: network=$network")
-                        networkInfos.removeIf { it.network == network }
+                        networkInfos.removeIfa { it.network == network }
                         for (observer in networkObservers) {
                             observer.onNetDisconnected(network, networkInfos)
                         }
@@ -124,5 +154,10 @@ object NetWorkObserver : INetWorkObserver {
                     // 检查网络是否不受限制
                     it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
         } ?: false
+    }
+
+    fun isVpn(network: Network): Boolean {
+        val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
+        return networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ?: false
     }
 }
