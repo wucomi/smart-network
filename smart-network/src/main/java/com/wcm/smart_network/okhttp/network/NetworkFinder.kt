@@ -2,7 +2,7 @@ package com.wcm.smart_network.okhttp.network
 
 import android.net.Network
 import android.os.Looper
-import android.util.Log
+import com.wcm.smart_network.okhttp.utils.Logger
 import okhttp3.internal.closeQuietly
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -62,10 +62,10 @@ internal class NetworkFinder(
                 host = get(0)
                 port = get(1).toIntOrNull() ?: 80
             }
-        Log.d(TAG, "Find Network: address=$address, host=$host, port=$port")
+        Logger.debug("Find Network: address=$address, host=$host, port=$port")
         // 从内存中获取
         addressNetworkInfos[address]?.let {
-            Log.d(TAG, "Find Network from memory: address=$address, network=$it")
+            Logger.debug("Find Network from memory: address=$address, network=$it")
             return it
         }
         // 从DiskCache中获取，和当前网络环境匹配的保存到内存返回，不匹配的跳过
@@ -75,7 +75,7 @@ internal class NetworkFinder(
             }
             networkInfo?.let {
                 addressNetworkInfos[address] = it
-                Log.d(TAG, "Find Network from disk cache: address=$address, network=$it")
+                Logger.debug("Find Network from disk cache: address=$address, network=$it")
                 return it
             }
         }
@@ -106,7 +106,7 @@ internal class NetworkFinder(
         return networkInfo?.apply {
             addressNetworkInfos[address] = this
             diskCacheHostNetwork?.putAddressNetwork(address, network.networkHandle)
-            Log.d(TAG, "Find Network from check reachable: network=${this}")
+            Logger.debug("Find Network from check reachable: network=${this}")
         }
     }
 
@@ -147,7 +147,7 @@ internal class NetworkFinder(
                 sortNetworkInfos.add(it)
             }
         }
-        Log.d(TAG, "Sort Network: sortNetworks=$sortNetworkInfos, networks=$networkInfos")
+        Logger.debug("Sort Network: sortNetworks=$sortNetworkInfos, networks=$networkInfos")
         return sortNetworkInfos
     }
 

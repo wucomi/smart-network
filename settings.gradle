@@ -40,3 +40,4 @@ if (includeApp.toBoolean()) {
 }
 include ':smart-network'
 include ':proxy'
+include ':OkhttpInstrument'

@@ -1,15 +1,14 @@
-package com.wcm.smart_network.okhttp.network
+package com.hik.network.proxy.network
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import com.wcm.smart_network.okhttp.utils.Logger
-import com.wcm.smart_network.okhttp.utils.removeIfa
+import com.wcm.smart_network.system.utils.Logger
+import com.wcm.smart_network.system.utils.removeIfa
 
-internal object NetWorkObserver : INetWorkObserver {
-    private const val TAG = "SmartNetwork"
+class NetWorkObserver : INetWorkObserver {
     private var connectivityManager: ConnectivityManager? = null
     private val networkObservers = arrayListOf<INetworkChangedObserver>()
     private val networkInfos = arrayListOf<NetworkInfo>()
@@ -53,9 +52,7 @@ internal object NetWorkObserver : INetWorkObserver {
                                 NetworkType.ExtranetWifi
                             } else {
                                 NetworkType.IntranetWifi
-                            },
-                            isVpn(network),
-                            connectivityManager?.getNetworkCapabilities(network)
+                            }
                         )
                         networkInfos.add(networkInfo)
                         for (observer in networkObservers) {
@@ -69,29 +66,6 @@ internal object NetWorkObserver : INetWorkObserver {
                         networkInfos.removeIfa { it.network == network }
                         for (observer in networkObservers) {
                             observer.onNetDisconnected(network, networkInfos)
-                        }
-                    }
-
-                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-                        super.onCapabilitiesChanged(network, networkCapabilities)
-                        Logger.debug("onWifiCapabilitiesChanged: network=$network, networkCapabilities=$networkCapabilities")
-                        val index = networkInfos.indexOfFirst {
-                            it.network.networkHandle == network.networkHandle
-                        }
-                        if (index != -1) {
-                            networkInfos[index] = NetworkInfo(
-                                network,
-                                if (isExtranetWifi(network)) {
-                                    NetworkType.ExtranetWifi
-                                } else {
-                                    NetworkType.IntranetWifi
-                                },
-                                isVpn(network),
-                                networkCapabilities
-                            )
-                            for (observer in networkObservers) {
-                                observer.onCapabilitiesChanged(network, networkInfos)
-                            }
                         }
                     }
                 })
@@ -115,11 +89,7 @@ internal object NetWorkObserver : INetWorkObserver {
                     override fun onAvailable(network: Network) {
                         super.onAvailable(network)
                         Logger.debug("onCellularAvailable: network=$network")
-                        val networkInfo = NetworkInfo(
-                            network, NetworkType.Cellular,
-                            isVpn(network),
-                            connectivityManager?.getNetworkCapabilities(network)
-                        )
+                        val networkInfo = NetworkInfo(network, NetworkType.Cellular)
                         networkInfos.add(networkInfo)
                         for (observer in networkObservers) {
                             observer.onNetConnected(networkInfo, networkInfos)
@@ -154,10 +124,5 @@ internal object NetWorkObserver : INetWorkObserver {
                     // 检查网络是否不受限制
                     it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
         } ?: false
-    }
-
-    fun isVpn(network: Network): Boolean {
-        val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
-        return networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ?: false
     }
 }
