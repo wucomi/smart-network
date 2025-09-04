@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-internal object DiskCacheHostNetwork : IDiskCacheHostNetwork {
+class DiskCacheHostNetwork : IDiskCacheHostNetwork {
     private lateinit var sharedPreferences: SharedPreferences
 
     fun init(context: Context) {

@@ -8,8 +8,7 @@ import android.net.NetworkRequest
 import com.wcm.smart_network.okhttp.utils.Logger
 import com.wcm.smart_network.okhttp.utils.removeIfa
 
-internal object NetWorkObserver : INetWorkObserver {
-    private const val TAG = "SmartNetwork"
+class NetWorkObserver : INetWorkObserver {
     private var connectivityManager: ConnectivityManager? = null
     private val networkObservers = arrayListOf<INetworkChangedObserver>()
     private val networkInfos = arrayListOf<NetworkInfo>()
@@ -75,11 +74,9 @@ internal object NetWorkObserver : INetWorkObserver {
                     override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                         super.onCapabilitiesChanged(network, networkCapabilities)
                         Logger.debug("onWifiCapabilitiesChanged: network=$network, networkCapabilities=$networkCapabilities")
-                        val index = networkInfos.indexOfFirst {
-                            it.network.networkHandle == network.networkHandle
-                        }
-                        if (index != -1) {
-                            networkInfos[index] = NetworkInfo(
+                        networkInfos.removeIfa { it.network.networkHandle == network.networkHandle }
+                        networkInfos.add(
+                            NetworkInfo(
                                 network,
                                 if (isExtranetWifi(network)) {
                                     NetworkType.ExtranetWifi
@@ -89,9 +86,9 @@ internal object NetWorkObserver : INetWorkObserver {
                                 isVpn(network),
                                 networkCapabilities
                             )
-                            for (observer in networkObservers) {
-                                observer.onCapabilitiesChanged(network, networkInfos)
-                            }
+                        )
+                        for (observer in networkObservers) {
+                            observer.onCapabilitiesChanged(network, networkInfos)
                         }
                     }
                 })

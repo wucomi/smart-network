@@ -1,5 +1,6 @@
 package com.example.demo
 
+import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.drawable.Drawable
@@ -20,9 +21,10 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import com.wcm.smart_network.okhttp.network.NetWorkObserver
+import com.wcm.smart_network.okhttp.network.NetworkFinder
 import com.wcm.smart_network.okhttp.network.NetworkType
 import com.wcm.smart_network.okhttp.smartNetwork
-import com.wcm.smart_network.system.SmartNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -43,6 +45,8 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URL
+import java.net.URLConnection
+import java.net.URLStreamHandler
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.Executors
@@ -66,9 +70,9 @@ class MainActivity : AppCompatActivity() {
 
 //        GlobalProxy().startGlobalProxy("8888")
 //        SimpleProxyServer().start()
-        SmartNetwork.init(application) {
-            port = 8888
-        }
+//        SmartNetwork.init(application) {
+//            port = 8888
+//        }
 
 //        thread {
 //            val socket = Socket("192.168.124.94", 8888)
@@ -84,35 +88,42 @@ class MainActivity : AppCompatActivity() {
 //            println("======================23333333")
 //        }
         Handler(Looper.getMainLooper()).postDelayed({
-            val pic =
-                "https://ts1.tc.mm.bing.net/th/id/R-C.32af73b7aea55367e4a3f8763961c894?rik=QUOZ37Lf%2bE7rbw&riu=http%3a%2f%2fimg95.699pic.com%2fphoto%2f50064%2f7148.jpg_wh860.jpg&ehk=00VUYvoTnuinFTJXQYbpLwh3e%2bLPJE9vL7h5ELm0avA%3d&risl=&pid=ImgRaw&r=0"
-            Glide.with(this).asFile().load(pic).into(object : CustomTarget<File>() {
-                override fun onResourceReady(resource: File, transition: Transition<in File>?) {
-                    println("======================${resource.absolutePath}")
-
-                    val galleryUri = addToGallery(resource, "img_${System.currentTimeMillis()}.jpg")
-                    galleryUri?.let {
-                        // 通知 MediaScanner 立即刷新（可选，Android 10+ 不需要）
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                            MediaScannerConnection.scanFile(
-                                this@MainActivity,
-                                arrayOf(it.toString()),
-                                arrayOf("image/jpeg"),
-                                null
-                            )
-                        }
-                    }
-                }
-
-                override fun onLoadCleared(placeholder: Drawable?) {
-
-                }
-
-            })
+//            val pic =
+//                "https://ts1.tc.mm.bing.net/th/id/R-C.32af73b7aea55367e4a3f8763961c894?rik=QUOZ37Lf%2bE7rbw&riu=http%3a%2f%2fimg95.699pic.com%2fphoto%2f50064%2f7148.jpg_wh860.jpg&ehk=00VUYvoTnuinFTJXQYbpLwh3e%2bLPJE9vL7h5ELm0avA%3d&risl=&pid=ImgRaw&r=0"
+//            Glide.with(this).asFile().load(pic).into(object : CustomTarget<File>() {
+//                override fun onResourceReady(resource: File, transition: Transition<in File>?) {
+//                    println("======================${resource.absolutePath}")
+//
+//                    val galleryUri = addToGallery(resource, "img_${System.currentTimeMillis()}.jpg")
+//                    galleryUri?.let {
+//                        // 通知 MediaScanner 立即刷新（可选，Android 10+ 不需要）
+//                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+//                            MediaScannerConnection.scanFile(
+//                                this@MainActivity,
+//                                arrayOf(it.toString()),
+//                                arrayOf("image/jpeg"),
+//                                null
+//                            )
+//                        }
+//                    }
+//                }
+//
+//                override fun onLoadCleared(placeholder: Drawable?) {
+//
+//                }
+//
+//            })
 
             initSmartNetwork()
-        }, 0)
-
+        }, 10000)
+//        URL.setURLStreamHandlerFactory { protocol ->
+//            MyURLStreamHandler(application)
+//        }
+//        lifecycleScope.launch(Dispatchers.IO) {
+//            URL("http://192.168.124.94:8000").openConnection().getInputStream()?.bufferedReader()?.use {
+//                println(it.readLine() + "111======================")
+//            }
+//        }
         lifecycleScope.launch {
             println("开始执行，当前时间: ${System.currentTimeMillis()}")
             fdf()
@@ -120,7 +131,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun fdf(){
+    class MyURLStreamHandler(private val application: Application) : URLStreamHandler() {
+        val finder = NetworkFinder(NetWorkObserver().apply { init(application) })
+        override fun openConnection(url: URL): URLConnection {
+            println("111==============${url.host}")
+            return finder.find("${url.host}:${url.port}")?.network?.openConnection(url) ?: url.openConnection()
+        }
+    }
+
+    private suspend fun fdf() {
         val result = withTimeoutOrNull(1000) { // 设定1秒超时
 
             // 启动一个IO密集型任务
@@ -145,7 +164,7 @@ class MainActivity : AppCompatActivity() {
         println("超时结束，当前时间: ${System.currentTimeMillis()}")
     }
 
-    private val url = "http://192.168.124.94:8000"
+    private val url = "http://www.kuaidi100.com/query?type=快递公司代号&postid=快递单号"
     private fun initSmartNetwork() {
         val sslContext = SSLContext.getInstance("TLS")
         val trustManagers = arrayOf<TrustManager>(object : X509TrustManager {

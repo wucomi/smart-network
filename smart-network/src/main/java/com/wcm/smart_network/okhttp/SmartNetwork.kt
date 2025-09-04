@@ -72,11 +72,11 @@ class SmartNetworkBuilder(
         return client.newBuilder().apply {
             val urlHolder = HttpUrlHolder()
             addInterceptor(HttpUrlInterceptor(urlHolder))
-            val hostNetworkCache = diskCacheHostNetwork ?: DiskCacheHostNetwork.apply {
+            val hostNetworkCache = diskCacheHostNetwork ?: DiskCacheHostNetwork().apply {
                 init(SmartNetwork.appCtx)
             }
             val finder = NetworkFinder(
-                NetWorkObserver.apply { init(SmartNetwork.appCtx) },
+                NetWorkObserver().apply { init(SmartNetwork.appCtx) },
                 hostNetworkCache,
                 strategy,
                 hostStrategy

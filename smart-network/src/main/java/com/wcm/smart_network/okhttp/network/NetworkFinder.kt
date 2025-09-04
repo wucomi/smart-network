@@ -10,10 +10,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
-internal class NetworkFinder(
+class NetworkFinder(
     networkObserver: INetWorkObserver,
     private val diskCacheHostNetwork: IDiskCacheHostNetwork? = null,
-    private val strategy: List<NetworkType>?,
+    private val strategy: List<NetworkType>? = null,
     private val hostStrategy: Map<String, List<NetworkType>>? = null,
 ) {
     private val addressNetworkInfos = ConcurrentHashMap<String, NetworkInfo>()
@@ -113,7 +113,12 @@ internal class NetworkFinder(
     private fun isReachable(connection: NConnection, host: String?, port: Int) = runCatching {
         val socket = connection.socket
         val networkInfo = connection.networkInfo
-        networkInfo.network.bindSocket(socket)
+        try {
+            networkInfo.network.bindSocket(socket)
+        } catch (e: Exception) {
+            Logger.error("Bind socket failed: $host:$port", e)
+            throw e
+        }
         socket.use {
             if (host.isNullOrBlank() || host == "null") {
                 it.connect(
@@ -152,12 +157,12 @@ internal class NetworkFinder(
     }
 
     fun changeNetwork(address: String) {
-        val index = (networkInfos.indexOfFirst {
-            it.network == addressNetworkInfos[address]?.network
-        } + 1).coerceIn(networkInfos.indices)
-        val networkInfo = networkInfos[index]
-        addressNetworkInfos[address] = networkInfo
-        diskCacheHostNetwork?.putAddressNetwork(address, networkInfo.network.networkHandle)
+//        val index = (networkInfos.indexOfFirst {
+//            it.network == addressNetworkInfos[address]?.network
+//        } + 1).coerceIn(networkInfos.indices)
+//        val networkInfo = networkInfos[index]
+//        addressNetworkInfos[address] = networkInfo
+//        diskCacheHostNetwork?.putAddressNetwork(address, networkInfo.network.networkHandle)
     }
 
     fun removeNetwork(address: String) {
