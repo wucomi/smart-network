@@ -3,6 +3,7 @@ package com.example.demo
 import android.app.Application
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -68,6 +69,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        startService(Intent(this, Process1Service::class.java))
+        startService(Intent(this, Process2Service::class.java))
 //        GlobalProxy().startGlobalProxy("8888")
 //        SimpleProxyServer().start()
 //        SmartNetwork.init(application) {
