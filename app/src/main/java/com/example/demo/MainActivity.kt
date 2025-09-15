@@ -62,11 +62,13 @@ import kotlin.concurrent.thread
 
 private fun readImageExif(imagePath: String) {
     try {
-        File(imagePath).inputStream().use {
-            val exifInterface = ExifInterface(it)
-            val latRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE)
-            val lngRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)
-            Log.d("MainActivity", "纬度方向: $latRef, 经度方向: $lngRef")
+        thread {
+            URL("http://192.168.124.94:8000/IMG_20250906_134434.jpg").openStream().use {
+                val exifInterface = ExifInterface(it)
+                val latRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE)
+                val lngRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)
+                Log.d("MainActivity", "纬度方向: $latRef, 经度方向: $lngRef")
+            }
         }
         val exifInterface = ExifInterface(imagePath)
         val latRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)
