@@ -18,6 +18,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
@@ -27,7 +28,9 @@ import com.wcm.smart_network.okhttp.network.NetworkFinder
 import com.wcm.smart_network.okhttp.network.NetworkType
 import com.wcm.smart_network.okhttp.smartNetwork
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
@@ -57,6 +60,44 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 import kotlin.concurrent.thread
 
+private fun readImageExif(imagePath: String) {
+    try {
+        File(imagePath).inputStream().use {
+            val exifInterface = ExifInterface(it)
+            val latRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE)
+            val lngRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)
+            Log.d("MainActivity", "纬度方向: $latRef, 经度方向: $lngRef")
+        }
+        val exifInterface = ExifInterface(imagePath)
+        val latRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)
+        val lngRef = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF)
+        val latArray = exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE)?.split(",")?.map { it.trim() }
+        val lngArray = exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)?.split(",")?.map { it.trim() }
+
+        if (latArray != null && lngArray != null) {
+            val latitude = convertToDecimal(latArray, latRef)
+            val longitude = convertToDecimal(lngArray, lngRef)
+            // 使用经纬度（latitude, longitude）
+            Log.d("MainActivity", "纬度: $latitude, 经度: $longitude")
+        } else {
+            // 图片无 GPS 信息
+            Log.d("MainActivity", "图片无 GPS 信息")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+private fun convertToDecimal(coordinateParts: List<String>, ref: String?): Double {
+    // 解析度分秒字符串（如 "30/1, 45/1, 0/1"）
+    val degrees = coordinateParts[0].split("/").let { (num, den) -> num.toDouble() / den.toDouble() }
+    val minutes = coordinateParts[1].split("/").let { (num, den) -> num.toDouble() / den.toDouble() }
+    val seconds = coordinateParts[2].split("/").let { (num, den) -> num.toDouble() / den.toDouble() }
+
+    val decimal = degrees + minutes / 60 + seconds / 3600
+    // 根据方向调整符号（南纬、西纬为负）
+    return if (ref == "S" || ref == "W") -decimal else decimal
+}
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,6 +109,8 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        readImageExif("/data/data/com.example.demo/files/IMG_20250906_134434.jpg")
 
         startService(Intent(this, Process1Service::class.java))
         startService(Intent(this, Process2Service::class.java))
