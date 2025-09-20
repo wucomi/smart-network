@@ -1,13 +1,16 @@
-package com.wcm.smart_network.okhttp.network
+package com.hik.smartnetwork.okhttp.network
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-class DiskCacheHostNetwork : IDiskCacheHostNetwork {
+object DiskCacheHostNetwork : IDiskCacheHostNetwork {
     private lateinit var sharedPreferences: SharedPreferences
 
     fun init(context: Context) {
+        if (::sharedPreferences.isInitialized) {
+            return
+        }
         sharedPreferences = context.getSharedPreferences("DiskCacheHostNetwork", Context.MODE_PRIVATE)
     }
 

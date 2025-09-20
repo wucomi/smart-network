@@ -1,63 +1,53 @@
-package com.wcm.smart_network.okhttp
+package com.hik.smartnetwork.okhttp
 
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import com.wcm.smart_network.okhttp.network.DiskCacheHostNetwork
-import com.wcm.smart_network.okhttp.network.IDiskCacheHostNetwork
-import com.wcm.smart_network.okhttp.network.NetWorkObserver
-import com.wcm.smart_network.okhttp.network.NetworkFinder
-import com.wcm.smart_network.okhttp.network.NetworkType
-import com.wcm.smart_network.okhttp.network.ResponseInterceptor
-import com.wcm.smart_network.okhttp.socket.HttpUrlHolder
-import com.wcm.smart_network.okhttp.socket.HttpUrlInterceptor
-import com.wcm.smart_network.okhttp.socket.SmartNetworkSocketFactory
+import com.hik.smartnetwork.okhttp.network.DiskCacheHostNetwork
+import com.hik.smartnetwork.okhttp.network.INetworkFinder
+import com.hik.smartnetwork.okhttp.network.NetWorkObserver
+import com.hik.smartnetwork.okhttp.network.NetworkFinder
+import com.hik.smartnetwork.okhttp.network.ResponseInterceptor
+import com.hik.smartnetwork.okhttp.socket.HttpUrlHolder
+import com.hik.smartnetwork.okhttp.socket.HttpUrlInterceptor
+import com.hik.smartnetwork.okhttp.socket.SmartNetworkSocketFactory
 import okhttp3.OkHttpClient
 import javax.net.SocketFactory
-import kotlin.concurrent.Volatile
 
 object SmartNetwork {
     @Volatile
     @JvmStatic
     lateinit var appCtx: Application
+    val finder by lazy {
+        NetworkFinder(
+            NetWorkObserver,
+            DiskCacheHostNetwork,
+            null,
+            null
+        )
+    }
 
     fun init(context: Context) {
         appCtx = context.applicationContext as Application
+        NetWorkObserver.apply { init(appCtx) }
+        DiskCacheHostNetwork.apply {
+            init(appCtx)
+        }
     }
 }
 
 class SmartNetworkBuilder(
     private val clientBuilder: OkHttpClient.Builder,
 ) {
-    private var strategy: List<NetworkType>? = null
-    private var hostStrategy: Map<String, List<NetworkType>>? = null
-    private var diskCacheHostNetwork: IDiskCacheHostNetwork? = null
+    private var networkFinder: INetworkFinder? = null
 
     /**
-     * 设置 strategy 参数
-     * @param strategyList 全局网络策略
+     * 设置 NetworkFinder 参数
+     * @param finder Network查询器
      * @return SmartNetworkBuilder
      */
-    fun setStrategy(strategyList: List<NetworkType>) = apply {
-        this.strategy = strategyList
-    }
-
-    /**
-     * 设置 hostStrategy 参数
-     * @param strategyMap host对应的网络策略
-     * @return SmartNetworkBuilder
-     */
-    fun setHostStrategy(strategyMap: Map<String, List<NetworkType>>) = apply {
-        this.hostStrategy = strategyMap
-    }
-
-    /**
-     * 设置 diskCacheHostNetwork 参数
-     * @param cache 缓存策略
-     * @return SmartNetworkBuilder
-     */
-    fun setDiskCacheHostNetwork(cache: IDiskCacheHostNetwork) = apply {
-        this.diskCacheHostNetwork = cache
+    fun setNetworkFinder(finder: INetworkFinder) = apply {
+        this.networkFinder = finder
     }
 
     /**
@@ -72,15 +62,7 @@ class SmartNetworkBuilder(
         return client.newBuilder().apply {
             val urlHolder = HttpUrlHolder()
             addInterceptor(HttpUrlInterceptor(urlHolder))
-            val hostNetworkCache = diskCacheHostNetwork ?: DiskCacheHostNetwork().apply {
-                init(SmartNetwork.appCtx)
-            }
-            val finder = NetworkFinder(
-                NetWorkObserver().apply { init(SmartNetwork.appCtx) },
-                hostNetworkCache,
-                strategy,
-                hostStrategy
-            )
+            val finder = networkFinder ?: SmartNetwork.finder
             addNetworkInterceptor(ResponseInterceptor(finder))
             socketFactory(SmartNetworkSocketFactory(urlHolder, finder))
         }.build()

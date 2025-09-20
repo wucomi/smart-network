@@ -1,4 +1,4 @@
-package com.wcm.smart_network.okhttp.network
+package com.hik.smartnetwork.okhttp.network
 
 interface IDiskCacheHostNetwork {
     fun getAddressNetwork(address: String): Long

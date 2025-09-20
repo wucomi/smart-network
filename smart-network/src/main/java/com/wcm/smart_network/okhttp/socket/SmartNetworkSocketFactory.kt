@@ -1,23 +1,23 @@
-package com.wcm.smart_network.okhttp.socket
+package com.hik.smartnetwork.okhttp.socket
 
-import com.wcm.smart_network.okhttp.network.NetworkFinder
-import com.wcm.smart_network.okhttp.network.NetworkInfo
+import com.hik.smartnetwork.okhttp.network.INetworkFinder
+import com.hik.smartnetwork.okhttp.network.NetworkInfo
 import java.net.InetAddress
 import java.net.Socket
 import javax.net.SocketFactory
 
 internal class SmartNetworkSocketFactory(
     private val urlHolder: HttpUrlHolder,
-    private val finder: NetworkFinder,
+    private val finder: INetworkFinder,
 ) : SocketFactory() {
     override fun createSocket(): Socket {
-        val network = finder.find(urlHolder.getAddress())
+        val network = finder.findNetwork(urlHolder.getAddress())
         val socketFactory = getSocketFactory(network)
         return socketFactory.createSocket()
     }
 
     override fun createSocket(host: String?, port: Int): Socket {
-        val network = finder.find(urlHolder.getAddress())
+        val network = finder.findNetwork(urlHolder.getAddress())
         val socketFactory = getSocketFactory(network)
         return socketFactory.createSocket(host, port)
     }
@@ -26,13 +26,13 @@ internal class SmartNetworkSocketFactory(
         host: String?, port: Int,
         localHost: InetAddress?, localPort: Int
     ): Socket {
-        val network = finder.find(urlHolder.getAddress())
+        val network = finder.findNetwork(urlHolder.getAddress())
         val socketFactory = getSocketFactory(network)
         return socketFactory.createSocket(host, port, localHost, localPort)
     }
 
     override fun createSocket(host: InetAddress?, port: Int): Socket {
-        val network = finder.find(urlHolder.getAddress())
+        val network = finder.findNetwork(urlHolder.getAddress())
         val socketFactory = getSocketFactory(network)
         return socketFactory.createSocket(host, port)
     }
@@ -41,12 +41,18 @@ internal class SmartNetworkSocketFactory(
         address: InetAddress?, port: Int,
         localAddress: InetAddress?, localPort: Int
     ): Socket {
-        val network = finder.find(urlHolder.getAddress())
+        val network = finder.findNetwork(urlHolder.getAddress())
         val socketFactory = getSocketFactory(network)
         return socketFactory.createSocket(address, port, localAddress, localPort)
     }
 
     private fun getSocketFactory(networkInfo: NetworkInfo?): SocketFactory {
-        return networkInfo?.network?.socketFactory ?: getDefault()
+        return networkInfo?.let {
+            if (it.isVpn) {
+                getDefault()
+            } else {
+                it.network.socketFactory
+            }
+        } ?: getDefault()
     }
 }

@@ -1,25 +1,29 @@
-package com.wcm.smart_network.okhttp.network
+package com.hik.smartnetwork.okhttp.network
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import com.wcm.smart_network.okhttp.utils.Logger
-import com.wcm.smart_network.okhttp.utils.removeIfa
+import com.hik.smartnetwork.okhttp.utils.Logger
+import com.hik.smartnetwork.okhttp.utils.removeIfa
+import java.net.NetworkInterface
+import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 
-class NetWorkObserver : INetWorkObserver {
+object NetWorkObserver : INetWorkObserver {
     private var connectivityManager: ConnectivityManager? = null
-    private val networkObservers = arrayListOf<INetworkChangedObserver>()
-    private val networkInfos = arrayListOf<NetworkInfo>()
+    private val networkObservers = CopyOnWriteArrayList<INetworkChangedObserver>()
+    private val networkInfos = CopyOnWriteArrayList<NetworkInfo>()
 
-    fun init(context: Context): Boolean {
-        connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (!initWifiCallback()) {
-            return false
+    fun init(context: Context) {
+        if (connectivityManager == null) {
+            connectivityManager =
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            if (initWifiCallback()) {
+                initCellularCallback()
+            }
         }
-        return initCellularCallback()
     }
 
     override fun registerNetworkObserver(observer: INetworkChangedObserver) {
@@ -46,6 +50,15 @@ class NetWorkObserver : INetWorkObserver {
                     override fun onAvailable(network: Network) {
                         super.onAvailable(network)
                         Logger.debug("onWifiAvailable: network=$network")
+                        networkInfos.removeIfa { it.network.networkHandle == network.networkHandle }
+                        networkInfos.filter { it.networkType != NetworkType.Cellular }
+                            .forEach {
+                                Logger.debug("Wifi lost on new network available: network=${it.network}")
+                                networkInfos.remove(it)
+                                for (observer in networkObservers) {
+                                    observer.onNetDisconnected(it.network, networkInfos)
+                                }
+                            }
                         val networkInfo = NetworkInfo(
                             network,
                             if (isExtranetWifi(network)) {
@@ -64,8 +77,13 @@ class NetWorkObserver : INetWorkObserver {
 
                     override fun onLost(network: Network) {
                         super.onLost(network)
+                        val isContains = networkInfos.removeIfa {
+                            it.network.networkHandle == network.networkHandle
+                        }
+                        if (!isContains) {
+                            return
+                        }
                         Logger.debug("onWifiLost: network=$network")
-                        networkInfos.removeIfa { it.network == network }
                         for (observer in networkObservers) {
                             observer.onNetDisconnected(network, networkInfos)
                         }
@@ -111,6 +129,12 @@ class NetWorkObserver : INetWorkObserver {
                 object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
                         super.onAvailable(network)
+                        val isContains = networkInfos.indexOfFirst {
+                            it.network.networkHandle == network.networkHandle
+                        } != -1
+                        if (isContains) {
+                            return
+                        }
                         Logger.debug("onCellularAvailable: network=$network")
                         val networkInfo = NetworkInfo(
                             network, NetworkType.Cellular,
@@ -125,11 +149,37 @@ class NetWorkObserver : INetWorkObserver {
 
                     override fun onLost(network: Network) {
                         super.onLost(network)
+                        val isContains = networkInfos.removeIfa {
+                            it.network.networkHandle == network.networkHandle
+                        }
+                        if (!isContains) {
+                            return
+                        }
                         Logger.debug("onCellularLost: network=$network")
-                        networkInfos.removeIfa { it.network == network }
                         for (observer in networkObservers) {
                             observer.onNetDisconnected(network, networkInfos)
                         }
+                    }
+
+                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                        super.onCapabilitiesChanged(network, networkCapabilities)
+                        val index = networkInfos.indexOfFirst {
+                            it.network.networkHandle == network.networkHandle
+                        }
+                        if (index == -1) {
+                            return
+                        }
+                        Logger.debug("onCellularChanged: network=$network, networkCapabilities=$networkCapabilities")
+                        networkInfos[index] = NetworkInfo(
+                            network,
+                            NetworkType.Cellular,
+                            isVpn(network),
+                            networkCapabilities
+                        )
+                        for (observer in networkObservers) {
+                            observer.onCapabilitiesChanged(network, networkInfos)
+                        }
+
                     }
                 })
         } catch (e: Exception) {
@@ -154,7 +204,36 @@ class NetWorkObserver : INetWorkObserver {
     }
 
     fun isVpn(network: Network): Boolean {
-        val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
-        return networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ?: false
+        return isVpnActive(network) || isVpnEnabledByInterface() || checkVpnByRouting()
+    }
+
+    fun isVpnActive(network: Network): Boolean {
+        val capabilities = connectivityManager?.getNetworkCapabilities(network)
+        return capabilities != null &&
+                (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                        || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN))
+    }
+
+    // 检查网络接口名称
+    fun isVpnEnabledByInterface(): Boolean {
+        try {
+            val networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+            return networkInterfaces.any { it.name.contains("tun") || it.name.contains("ppp") }
+        } catch (e: Exception) {
+            Logger.error("isVpnEnabledByInterface error", e)
+        }
+        return false
+    }
+
+    // 检查路由表
+    fun checkVpnByRouting(): Boolean {
+        try {
+            val process = Runtime.getRuntime().exec("ip route show table all")
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            return output.contains("tun") || output.contains("ppp")
+        } catch (e: Exception) {
+            Logger.error("checkVpnByRouting error", e)
+        }
+        return false
     }
 }

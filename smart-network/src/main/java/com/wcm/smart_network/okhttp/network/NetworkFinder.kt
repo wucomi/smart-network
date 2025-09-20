@@ -1,23 +1,24 @@
-package com.wcm.smart_network.okhttp.network
+package com.hik.smartnetwork.okhttp.network
 
 import android.net.Network
 import android.os.Looper
-import com.wcm.smart_network.okhttp.utils.Logger
+import com.hik.smartnetwork.okhttp.utils.Logger
 import okhttp3.internal.closeQuietly
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
 class NetworkFinder(
     networkObserver: INetWorkObserver,
     private val diskCacheHostNetwork: IDiskCacheHostNetwork? = null,
-    private val strategy: List<NetworkType>? = null,
+    private val strategy: List<NetworkType>?,
     private val hostStrategy: Map<String, List<NetworkType>>? = null,
-) {
+) : INetworkFinder {
     private val addressNetworkInfos = ConcurrentHashMap<String, NetworkInfo>()
-    private var networkInfos: List<NetworkInfo> = arrayListOf()
+    private var networkInfos: List<NetworkInfo> = CopyOnWriteArrayList()
     private val dispatcher = Executors.newCachedThreadPool()
 
     init {
@@ -50,7 +51,7 @@ class NetworkFinder(
         })
     }
 
-    fun find(address: String?): NetworkInfo? {
+    override fun findNetwork(address: String?): NetworkInfo? {
         address ?: return null
         if (Looper.myLooper() == Looper.getMainLooper()) {
             throw IllegalStateException("Cannot find network on the main thread.")
@@ -84,7 +85,7 @@ class NetworkFinder(
         val sortNetworkInfos = sortNetworkInfos(address)
         // 快速匹配
         var networkInfo: NetworkInfo? = null
-        val countDownLatch = CountDownLatch(2)
+        val countDownLatch = CountDownLatch(sortNetworkInfos.size)
         val connections = sortNetworkInfos.map { NConnection(it, Socket()) }
             .onEach { connection ->
                 dispatcher.execute {
@@ -115,7 +116,11 @@ class NetworkFinder(
         val networkInfo = connection.networkInfo
         try {
             networkInfo.network.bindSocket(socket)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            synchronized(this) {
+                addressNetworkInfos.clear()
+                diskCacheHostNetwork?.clear()
+            }
             Logger.error("Bind socket failed: $host:$port", e)
             throw e
         }
@@ -156,7 +161,7 @@ class NetworkFinder(
         return sortNetworkInfos
     }
 
-    fun changeNetwork(address: String) {
+    override fun changeNetwork(address: String) {
 //        val index = (networkInfos.indexOfFirst {
 //            it.network == addressNetworkInfos[address]?.network
 //        } + 1).coerceIn(networkInfos.indices)
@@ -165,12 +170,8 @@ class NetworkFinder(
 //        diskCacheHostNetwork?.putAddressNetwork(address, networkInfo.network.networkHandle)
     }
 
-    fun removeNetwork(address: String) {
+    override fun removeNetwork(address: String) {
         addressNetworkInfos.remove(address)
         diskCacheHostNetwork?.removeAddressNetwork(address)
-    }
-
-    companion object {
-        private const val TAG = "SmartNetwork"
     }
 }

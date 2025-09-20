@@ -1,4 +1,4 @@
-package com.wcm.smart_network.okhttp
+package com.hik.smartnetwork.okhttp
 
 import android.content.ContentProvider
 import android.content.ContentValues
