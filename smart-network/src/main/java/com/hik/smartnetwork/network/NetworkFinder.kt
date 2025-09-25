@@ -1,8 +1,8 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.network
 
 import android.net.Network
 import android.os.Looper
-import com.hik.smartnetwork.okhttp.utils.Logger
+import com.hik.smartnetwork.utils.Logger
 import okhttp3.internal.closeQuietly
 import java.net.InetSocketAddress
 import java.net.Socket

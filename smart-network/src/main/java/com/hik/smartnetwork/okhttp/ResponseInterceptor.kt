@@ -1,5 +1,6 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.okhttp
 
+import com.hik.smartnetwork.network.INetworkFinder
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException

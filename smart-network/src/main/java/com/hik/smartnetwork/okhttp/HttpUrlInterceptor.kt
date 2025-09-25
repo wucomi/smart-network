@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.socket
+package com.hik.smartnetwork.okhttp
 
 import okhttp3.Interceptor
 import okhttp3.Response

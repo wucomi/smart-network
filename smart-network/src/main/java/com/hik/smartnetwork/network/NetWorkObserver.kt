@@ -1,12 +1,12 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.network
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import com.hik.smartnetwork.okhttp.utils.Logger
-import com.hik.smartnetwork.okhttp.utils.removeIfa
+import com.hik.smartnetwork.utils.Logger
+import com.hik.smartnetwork.utils.removeIfa
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.concurrent.CopyOnWriteArrayList

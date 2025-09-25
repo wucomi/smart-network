@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.network
 
 import java.net.Socket
 

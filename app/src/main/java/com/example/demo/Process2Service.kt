@@ -8,18 +8,15 @@ import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
-import com.wcm.smart_network.okhttp.network.NetworkType
-import com.wcm.smart_network.okhttp.smartNetwork
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.net.Socket
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -45,6 +42,12 @@ class Process2Service : Service() {
                 super.onAvailable(network)
                 connectivityManager!!.bindProcessToNetwork(network)
                 network2 = network
+                val socket = Socket()
+                try {
+                    network.bindSocket(socket)
+                } catch (e: Throwable) {
+                    Log.d("Process2Service", "bindSocket: $e")
+                }
                 Log.d("Process2Service", "Bound to network: $network")
                 initSmartNetwork()
             }
@@ -55,7 +58,7 @@ class Process2Service : Service() {
         return null
     }
 
-    private val url = "http://www.kuaidi100.com/query?type=快递公司代号&postid=快递单号"
+    private val url = "http://192.168.124.94:8000"
     private fun initSmartNetwork() {
         val sslContext = SSLContext.getInstance("TLS")
         val trustManagers = arrayOf<TrustManager>(object : X509TrustManager {
@@ -80,8 +83,6 @@ class Process2Service : Service() {
 //                }
 //
 //            })
-            .smartNetwork()
-            .setStrategy(arrayListOf(NetworkType.Cellular, NetworkType.ExtranetWifi))
             .build()
 
         okHttpClient.newCall(Request.Builder().url(url).build())

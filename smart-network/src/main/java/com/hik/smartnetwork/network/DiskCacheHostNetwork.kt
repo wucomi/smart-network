@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.network
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -8,7 +8,7 @@ object DiskCacheHostNetwork : IDiskCacheHostNetwork {
     private lateinit var sharedPreferences: SharedPreferences
 
     fun init(context: Context) {
-        if (::sharedPreferences.isInitialized) {
+        if (DiskCacheHostNetwork::sharedPreferences.isInitialized) {
             return
         }
         sharedPreferences = context.getSharedPreferences("DiskCacheHostNetwork", Context.MODE_PRIVATE)

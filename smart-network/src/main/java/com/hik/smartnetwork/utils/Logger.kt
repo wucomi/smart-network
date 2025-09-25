@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.utils
+package com.hik.smartnetwork.utils
 
 import android.util.Log
 
@@ -18,7 +18,8 @@ object Logger {
         else Log.w(TAG, "[WARN] $message")
     }
 
-    fun error(message: String, e: Throwable) {
-        Log.e(TAG, "[ERROR] $message", e)
+    fun error(message: String, e: Throwable? = null) {
+        if (e != null) Log.e(TAG, "[ERROR] $message", e)
+        else Log.e(TAG, "[ERROR] $message")
     }
 }

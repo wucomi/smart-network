@@ -1,7 +1,7 @@
-package com.hik.smartnetwork.okhttp.socket
+package com.hik.smartnetwork.okhttp
 
-import com.hik.smartnetwork.okhttp.network.INetworkFinder
-import com.hik.smartnetwork.okhttp.network.NetworkInfo
+import com.hik.smartnetwork.network.INetworkFinder
+import com.hik.smartnetwork.network.NetworkInfo
 import java.net.InetAddress
 import java.net.Socket
 import javax.net.SocketFactory

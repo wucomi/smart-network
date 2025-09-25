@@ -1,4 +1,4 @@
-package com.wcm.smart_network
+package com.hik.smartnetwork
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

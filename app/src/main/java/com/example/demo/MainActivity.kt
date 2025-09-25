@@ -1,11 +1,8 @@
 package com.example.demo
 
-import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Drawable
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,24 +17,23 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
-import com.wcm.smart_network.okhttp.network.NetWorkObserver
-import com.wcm.smart_network.okhttp.network.NetworkFinder
-import com.wcm.smart_network.okhttp.network.NetworkType
-import com.wcm.smart_network.okhttp.smartNetwork
+import com.hik.smartnetwork.SmartNetwork
+import com.hik.smartnetwork.network.NetworkType
+import com.hik.smartnetwork.okhttp.smartNetwork
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.internal.closeQuietly
 import okio.IOException
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -53,6 +49,7 @@ import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
@@ -112,10 +109,10 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        readImageExif("/data/data/com.example.demo/files/IMG_20250906_134434.jpg")
+//        readImageExif("/data/data/com.example.demo/files/IMG_20250906_134434.jpg")
 
-        startService(Intent(this, Process1Service::class.java))
-        startService(Intent(this, Process2Service::class.java))
+//        startService(Intent(this, Process1Service::class.java))
+//        startService(Intent(this, Process2Service::class.java))
 //        GlobalProxy().startGlobalProxy("8888")
 //        SimpleProxyServer().start()
 //        SmartNetwork.init(application) {
@@ -165,7 +162,7 @@ class MainActivity : AppCompatActivity() {
             initSmartNetwork()
         }, 10000)
 //        URL.setURLStreamHandlerFactory { protocol ->
-//            MyURLStreamHandler(application)
+//            SmartNetworkURLStreamHandler()
 //        }
 //        lifecycleScope.launch(Dispatchers.IO) {
 //            URL("http://192.168.124.94:8000").openConnection().getInputStream()?.bufferedReader()?.use {
@@ -179,11 +176,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    class MyURLStreamHandler(private val application: Application) : URLStreamHandler() {
-        val finder = NetworkFinder(NetWorkObserver().apply { init(application) })
+    class SmartNetworkURLStreamHandler : URLStreamHandler() {
+        private val finder = SmartNetwork.finder
         override fun openConnection(url: URL): URLConnection {
-            println("111==============${url.host}")
-            return finder.find("${url.host}:${url.port}")?.network?.openConnection(url) ?: url.openConnection()
+            return finder.findNetwork("${url.host}:${url.port}")?.network?.openConnection(url)
+                ?: url.openConnection()
         }
     }
 
@@ -212,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         println("超时结束，当前时间: ${System.currentTimeMillis()}")
     }
 
-    private val url = "http://www.kuaidi100.com/query?type=快递公司代号&postid=快递单号"
+    private val url = "http://192.168.124.94:8000"
     private fun initSmartNetwork() {
         val sslContext = SSLContext.getInstance("TLS")
         val trustManagers = arrayOf<TrustManager>(object : X509TrustManager {
@@ -238,7 +235,6 @@ class MainActivity : AppCompatActivity() {
 //
 //            })
             .smartNetwork()
-            .setStrategy(arrayListOf(NetworkType.Cellular, NetworkType.ExtranetWifi))
             .build()
 
         okHttpClient.newCall(Request.Builder().url(url).build())

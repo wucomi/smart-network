@@ -1,4 +1,4 @@
-package com.wcm.smart_network
+package com.hik.smartnetwork
 
 import org.junit.Test
 

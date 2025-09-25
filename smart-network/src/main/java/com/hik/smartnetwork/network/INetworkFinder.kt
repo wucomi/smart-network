@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.network
+package com.hik.smartnetwork.network
 
 interface INetworkFinder {
     fun findNetwork(address: String?): NetworkInfo?

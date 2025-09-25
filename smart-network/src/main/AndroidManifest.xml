@@ -7,7 +7,7 @@
 
     <application>
         <provider
-            android:name=".okhttp.SdkInitProvider"
+            android:name=".SdkInitProvider"
             android:authorities="${applicationId}.SdkInitProvider"
             android:exported="false"
             android:initOrder="100" />

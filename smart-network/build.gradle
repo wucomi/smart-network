@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace 'com.wcm.smart_network'
+    namespace 'com.hik.smartnetwork'
     compileSdk 34
 
     defaultConfig {

@@ -1,4 +1,4 @@
-package com.hik.smartnetwork.okhttp.utils
+package com.hik.smartnetwork.utils
 
 fun <T> MutableList<T>.removeIfa(predicate: (T) -> Boolean): Boolean {
     val removeList = filter(predicate)

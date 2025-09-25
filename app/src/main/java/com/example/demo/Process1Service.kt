@@ -8,19 +8,15 @@ import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
-import android.widget.Toast
-import com.wcm.smart_network.okhttp.network.NetworkType
-import com.wcm.smart_network.okhttp.smartNetwork
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.net.Socket
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -44,6 +40,12 @@ class Process1Service : Service() {
             override fun onAvailable(network: Network) {
                 super.onAvailable(network)
                 connectivityManager!!.bindProcessToNetwork(network)
+                val socket = Socket()
+                try {
+                    network.bindSocket(socket)
+                } catch (e: Throwable) {
+                    Log.d("Process1Service", "bindSocket: $e")
+                }
                 network1 = network
                 Log.d("Process1Service", "Bound to network: $network")
                 initSmartNetwork()
@@ -80,8 +82,6 @@ class Process1Service : Service() {
 //                }
 //
 //            })
-            .smartNetwork()
-            .setStrategy(arrayListOf(NetworkType.Cellular, NetworkType.ExtranetWifi))
             .build()
 
         okHttpClient.newCall(Request.Builder().url(url).build())
