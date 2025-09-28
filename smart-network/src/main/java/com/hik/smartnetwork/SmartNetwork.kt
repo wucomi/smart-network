@@ -32,7 +32,7 @@ object SmartNetwork {
         try {
             URL.setURLStreamHandlerFactory { protocol ->
                 when (protocol.lowercase()) {
-                    "http", "https" -> SmartNetworkURLStreamHandler()
+                    "http", "https" -> SmartNetworkURLStreamHandler(finder)
                     else -> null
                 }
             }

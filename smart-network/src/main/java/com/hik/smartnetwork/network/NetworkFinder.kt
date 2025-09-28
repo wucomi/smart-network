@@ -4,6 +4,7 @@ import android.net.Network
 import android.os.Looper
 import com.hik.smartnetwork.utils.Logger
 import okhttp3.internal.closeQuietly
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
@@ -11,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 
-class NetworkFinder(
+open class NetworkFinder(
     networkObserver: INetWorkObserver,
     private val diskCacheHostNetwork: IDiskCacheHostNetwork? = null,
     private val strategy: List<NetworkType>?,
@@ -110,6 +111,89 @@ class NetworkFinder(
             Logger.debug("Find Network from check reachable: network=${this}")
         }
     }
+
+    override fun findNetworkByHost(hostName: String?): NetworkInfo? {
+        hostName ?: return null
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            throw IllegalStateException("Cannot find network on the main thread.")
+        }
+        Logger.debug("Find Network: hostName=$hostName")
+        // 从内存中获取
+        addressNetworkInfos[hostName]?.let {
+            Logger.debug("Find Network from memory: hostName=$hostName, network=$it")
+            return it
+        }
+        // 从DiskCache中获取，和当前网络环境匹配的保存到内存返回，不匹配的跳过
+        diskCacheHostNetwork?.getAddressNetwork(hostName)?.let { networkHandle ->
+            val networkInfo = networkInfos.find {
+                networkHandle == it.network.networkHandle
+            }
+            networkInfo?.let {
+                addressNetworkInfos[hostName] = it
+                Logger.debug("Find Network from disk cache: hostName=$hostName, network=$it")
+                return it
+            }
+        }
+
+        // 通过检测网络连通性获取
+        val sortNetworkInfos = sortNetworkInfos(hostName)
+        // 快速匹配
+        var networkInfo: NetworkInfo? = null
+        val countDownLatch = CountDownLatch(sortNetworkInfos.size)
+        val connections = sortNetworkInfos.map { NConnection(it, Socket()) }
+            .onEach { connection ->
+                dispatcher.execute {
+                    // TODO:
+                    val inetAddress = connection.networkInfo.network.getAllByName(hostName)[0]
+                    if (isReachable(connection, inetAddress, 80)) {
+                        networkInfo = connection.networkInfo
+                        (0 until countDownLatch.count).forEach { _ ->
+                            countDownLatch.countDown()
+                        }
+                    } else {
+                        countDownLatch.countDown()
+                    }
+                }
+            }
+        countDownLatch.await()
+        // 将其他连接断开, 避免占用线程
+        connections.forEach {
+            it.socket.closeQuietly()
+        }
+        return networkInfo?.apply {
+            addressNetworkInfos[hostName] = this
+            diskCacheHostNetwork?.putAddressNetwork(hostName, network.networkHandle)
+            Logger.debug("Find Network from check reachable: network=${this}")
+        }
+    }
+
+    private fun isReachable(connection: NConnection, host: InetAddress?, port: Int) = runCatching {
+        val socket = connection.socket
+        val networkInfo = connection.networkInfo
+        try {
+            networkInfo.network.bindSocket(socket)
+        } catch (e: Throwable) {
+            synchronized(this) {
+                addressNetworkInfos.clear()
+                diskCacheHostNetwork?.clear()
+            }
+            Logger.error("Bind socket failed: $host:$port", e)
+            throw e
+        }
+        socket.use {
+            if (host == null) {
+                it.connect(
+                    InetSocketAddress(port),
+                    2000,
+                )
+            } else {
+                it.connect(
+                    InetSocketAddress(host, port),
+                    2000,
+                )
+            }
+        }
+    }.isSuccess
 
     private fun isReachable(connection: NConnection, host: String?, port: Int) = runCatching {
         val socket = connection.socket

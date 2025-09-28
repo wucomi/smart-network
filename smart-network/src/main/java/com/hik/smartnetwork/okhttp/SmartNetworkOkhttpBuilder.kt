@@ -3,7 +3,9 @@ package com.hik.smartnetwork.okhttp
 import com.hik.smartnetwork.SmartNetwork
 import com.hik.smartnetwork.network.INetworkFinder
 import com.hik.smartnetwork.utils.Logger
+import okhttp3.Dns
 import okhttp3.OkHttpClient
+import java.net.InetAddress
 import javax.net.SocketFactory
 
 class SmartNetworkOkhttpBuilder(
@@ -34,6 +36,20 @@ class SmartNetworkOkhttpBuilder(
             addInterceptor(HttpUrlInterceptor(urlHolder))
             val finder = networkFinder ?: SmartNetwork.finder
             addNetworkInterceptor(ResponseInterceptor(finder))
+            if (client.dns != Dns.SYSTEM) {
+                Logger.warn("SmartNetwork can only be used when the Okhttp SocketFactory is not set")
+            }
+            dns(object : Dns {
+                override fun lookup(hostname: String): List<InetAddress> {
+                    return SmartNetwork.finder.findNetworkByHost(hostname)?.let {
+                        try {
+                            it.network.getAllByName(hostname).toList()
+                        } catch (e: NullPointerException) {
+                            client.dns.lookup(hostname)
+                        }
+                    } ?: client.dns.lookup(hostname)
+                }
+            })
             socketFactory(SmartNetworkSocketFactory(urlHolder, finder))
         }.build()
     }

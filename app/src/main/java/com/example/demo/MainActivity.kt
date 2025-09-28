@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
 //            })
 
             initSmartNetwork()
-        }, 10000)
+        }, 0)
 //        URL.setURLStreamHandlerFactory { protocol ->
 //            SmartNetworkURLStreamHandler()
 //        }
@@ -209,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         println("超时结束，当前时间: ${System.currentTimeMillis()}")
     }
 
-    private val url = "http://192.168.124.94:8000"
+    private val url = "http://jsonplaceholder.typicode.com/posts/2"
     private fun initSmartNetwork() {
         val sslContext = SSLContext.getInstance("TLS")
         val trustManagers = arrayOf<TrustManager>(object : X509TrustManager {
